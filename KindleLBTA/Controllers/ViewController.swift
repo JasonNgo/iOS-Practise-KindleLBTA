@@ -16,31 +16,77 @@ class ViewController: UITableViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         
-        navigationController?.title = "Kindle"
+        setupNavigationBarStyle()
+        setupNavigationBarButtons()
         
         tableView.register(BookCell.self, forCellReuseIdentifier: "cellID")
         
         // Remove unrendered lines at the bottom
         tableView.tableFooterView = UIView()
         
-        setup()
+        fetchBooks()
     }
     
-    func setup() {
-        let book = Book(title: "Steve Jobs", author: "Walter Isaacson", image: nil, pages: [
-            Page(pageNumber: 1, pageText: "Text for the first page"),
-            Page(pageNumber: 2, pageText: "Text for the second page")
-            ])
-
-        let book2 = Book(title: "Bill Gates: A Biography", author: "Bill Gates", image: nil, pages: [
-            Page(pageNumber: 1, pageText: "Text for the first page"),
-            Page(pageNumber: 2, pageText: "Text for the second page"),
-            Page(pageNumber: 3, pageText: "Text for the third page"),
-            Page(pageNumber: 4, pageText: "Text for the fourth page")
-            ])
-
-        self.books = [book, book2]
-    } // setup
+    func setupNavigationBarStyle() {
+        print("setting up navigation bar styles...")
+        
+        navigationItem.title = "Kindle"
+    
+        navigationController?.navigationBar.barStyle = .blackOpaque
+        navigationController?.navigationBar.barTintColor = UIColor(red: 40 / 255, green: 40 / 255, blue: 40 / 255, alpha: 1)
+        
+        let attributes = [NSAttributedStringKey.foregroundColor: UIColor.white]
+        navigationController?.navigationBar.largeTitleTextAttributes = attributes
+    }
+    
+    func setupNavigationBarButtons() {
+        navigationItem.leftBarButtonItem = UIBarButtonItem(image: #imageLiteral(resourceName: "menu").withRenderingMode(.alwaysOriginal), style: .plain, target: self, action: #selector(handleMenuButtonPressed))
+        navigationItem.rightBarButtonItem = UIBarButtonItem(image: #imageLiteral(resourceName: "amazon_icon").withRenderingMode(.alwaysOriginal), style: .plain, target: self, action: #selector(handleAmazonButtonPressed))
+    }
+    
+    @objc func handleMenuButtonPressed() {
+        
+    }
+    
+    @objc func handleAmazonButtonPressed() {
+        
+    }
+    
+    func fetchBooks() {
+        print("fetching books.....")
+        
+        if let url = URL(string: "https://letsbuildthatapp-videos.s3-us-west-2.amazonaws.com/kindle.json") {
+            URLSession.shared.dataTask(with: url) { (data, response, error) in
+                if let err = error {
+                    print("There was an errror fetching the Books JSON", err)
+                    return
+                }
+                
+                guard let data = data else { return }
+                
+                do {
+                    let json = try JSONSerialization.jsonObject(with: data, options: .mutableContainers)
+                    guard let bookDictionarys = json as? [[String: Any]] else { return }
+                    
+                    print(bookDictionarys)
+                    
+                    self.books = []
+                    for bookDictionary in bookDictionarys {
+                        let book = Book(dictionary: bookDictionary)
+                        self.books?.append(book)
+                    }
+                    
+                    DispatchQueue.main.async {
+                        self.tableView.reloadData()
+                    }
+                    
+                } catch let jsonError {
+                    print("There was an error during serialization", jsonError)
+                }
+                
+            }.resume()
+        } // if let
+    } // fetchBooks
     
     // MARK: - UITableViewDelegate
     

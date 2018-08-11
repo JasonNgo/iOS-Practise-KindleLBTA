@@ -12,9 +12,28 @@ class BookCell: UITableViewCell {
     
     var book: Book? {
         didSet {
-            coverImageView.image = book?.image
             titleLabel.text = book?.title
             authorLabel.text = book?.author
+            coverImageView.image = nil
+            
+            // attempt to fetch image from imageURL
+            
+            guard let imageURLString = book?.imageURL else { return }
+            guard let url = URL(string: imageURLString) else { return }
+            
+            URLSession.shared.dataTask(with: url) { (data, response, error) in
+                if let err = error {
+                    print("There was an error fetching the image.", err)
+                    return
+                }
+                
+                guard let imageData = data else { return }
+                guard let image = UIImage(data: imageData) else { return }
+                
+                DispatchQueue.main.async {
+                    self.coverImageView.image = image
+                }
+            }.resume()
         }
     }
     
